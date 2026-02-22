@@ -103,6 +103,9 @@ impl VisionRecordsContract {
         env.storage().instance().set(&INITIALIZED, &true);
         rbac::assign_role(&env, admin.clone(), Role::Admin, 0);
 
+        // Bootstrap the admin with the Admin role so they can register other users
+        rbac::assign_role(&env, admin.clone(), Role::Admin, 0);
+
         events::publish_initialized(&env, admin);
 
         Ok(())
@@ -147,6 +150,9 @@ impl VisionRecordsContract {
         env.storage().persistent().set(&key, &user_data);
         rbac::assign_role(&env, user.clone(), role.clone(), 0);
 
+        rbac::assign_role(&env, user.clone(), role.clone(), 0);
+
+        // Assign the role in the RBAC system
         rbac::assign_role(&env, user.clone(), role.clone(), 0);
 
         events::publish_user_registered(&env, user, role, name);
@@ -366,6 +372,13 @@ impl VisionRecordsContract {
         rbac::has_permission(&env, &user, &permission)
     }
 }
+
+
+
+
+#[cfg(test)]
+mod test;
+
 
 #[cfg(test)]
 mod test_rbac;

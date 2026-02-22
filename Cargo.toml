@@ -2,7 +2,8 @@
 resolver = "2"
 
 members = [
-    "contracts/*",
+    "contracts/vision_records",
+    "contracts/staking",
 ]
 
 [workspace.package]
