@@ -263,6 +263,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "common"
+version = "1.2.2"
+
+[[package]]
+name = "compliance"
+version = "1.2.2"
+dependencies = [
+ "common",
+ "soroban-sdk",
+]
+
+[[package]]
 name = "const-oid"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -292,6 +304,16 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
+]
+
+[[package]]
+name = "cross_chain"
+version = "1.2.2"
+dependencies = [
+ "proptest",
+ "proptest-derive",
+ "soroban-sdk",
+ "vision_records",
 ]
 
 [[package]]
@@ -780,6 +802,14 @@ name = "ident_case"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
+
+[[package]]
+name = "identity"
+version = "1.2.2"
+dependencies = [
+ "common",
+ "soroban-sdk",
+]
 
 [[package]]
 name = "indexmap"
@@ -1737,7 +1767,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "vision_records"
-version = "1.1.0"
+version = "1.2.2"
 dependencies = [
  "proptest",
  "proptest-derive",
@@ -2091,7 +2121,7 @@ dependencies = [
 
 [[package]]
 name = "zk_verifier"
-version = "1.1.0"
+version = "1.2.2"
 dependencies = [
  "soroban-sdk",
 ]
