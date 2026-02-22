@@ -101,6 +101,7 @@ impl VisionRecordsContract {
 
         env.storage().instance().set(&ADMIN, &admin);
         env.storage().instance().set(&INITIALIZED, &true);
+        rbac::assign_role(&env, admin.clone(), Role::Admin, 0);
 
         events::publish_initialized(&env, admin);
 
@@ -144,6 +145,7 @@ impl VisionRecordsContract {
 
         let key = (symbol_short!("USER"), user.clone());
         env.storage().persistent().set(&key, &user_data);
+        rbac::assign_role(&env, user.clone(), role.clone(), 0);
 
         events::publish_user_registered(&env, user, role, name);
 
@@ -362,4 +364,3 @@ impl VisionRecordsContract {
         rbac::has_permission(&env, &user, &permission)
     }
 }
-
