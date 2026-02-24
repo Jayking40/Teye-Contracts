@@ -15,11 +15,14 @@ use soroban_sdk::contracterror;
 // ── Modules ──────────────────────────────────────────────────────────────────
 
 pub mod admin_tiers;
+pub mod conflict_resolver;
 #[cfg(feature = "std")]
 pub mod consent;
 pub mod keys;
 pub mod meta_tx;
 pub mod multisig;
+pub mod policy_dsl;
+pub mod policy_engine;
 pub mod rate_limit;
 pub mod reentrancy_guard;
 pub mod whitelist;
