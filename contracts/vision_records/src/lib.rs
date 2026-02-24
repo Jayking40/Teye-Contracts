@@ -205,6 +205,10 @@ impl VisionRecordsContract {
         role: Role,
         name: String,
     ) -> Result<(), ContractError> {
+        circuit_breaker::require_not_paused(
+            &env,
+            &circuit_breaker::PauseScope::Function(symbol_short!("REG_USR")),
+        )?;
         caller.require_auth();
 
         if !rbac::has_permission(&env, &caller, &Permission::ManageUsers) {
@@ -289,6 +293,10 @@ impl VisionRecordsContract {
         record_type: RecordType,
         data_hash: String,
     ) -> Result<u64, ContractError> {
+        circuit_breaker::require_not_paused(
+            &env,
+            &circuit_breaker::PauseScope::Function(symbol_short!("ADD_REC")),
+        )?;
         caller.require_auth();
 
         validation::validate_data_hash(&data_hash)?;
@@ -532,6 +540,10 @@ impl VisionRecordsContract {
         level: AccessLevel,
         duration_seconds: u64,
     ) -> Result<(), ContractError> {
+        circuit_breaker::require_not_paused(
+            &env,
+            &circuit_breaker::PauseScope::Function(symbol_short!("GRT_ACC")),
+        )?;
         caller.require_auth();
 
         validation::validate_duration(duration_seconds)?;
@@ -630,6 +642,10 @@ impl VisionRecordsContract {
         patient: Address,
         grantee: Address,
     ) -> Result<(), ContractError> {
+        circuit_breaker::require_not_paused(
+            &env,
+            &circuit_breaker::PauseScope::Function(symbol_short!("REV_ACC")),
+        )?;
         patient.require_auth();
 
         let key = (symbol_short!("ACCESS"), patient.clone(), grantee.clone());
@@ -713,6 +729,8 @@ mod test;
 #[cfg(test)]
 mod test;
 
+#[cfg(test)]
+mod test_pause;
 #[cfg(test)]
 mod test_rbac;
 
