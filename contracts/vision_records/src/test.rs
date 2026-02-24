@@ -125,7 +125,7 @@ fn test_whitelist_enforced_for_add_records_batch() {
     client.initialize(&admin);
 
     client.set_whitelist_enabled(&admin, &true);
-    client.remove_from_whitelist(&admin, &provider);
+    assert!(!client.is_whitelisted(&provider));
 
     let mut records = Vec::new(&env);
     records.push_back(BatchRecordInput {
