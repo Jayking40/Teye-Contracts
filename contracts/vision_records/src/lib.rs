@@ -93,7 +93,7 @@ fn has_active_consent(env: &Env, patient: &Address, grantee: &Address) -> bool {
     }
 }
 
-pub use rbac::{Permission, Role};
+pub use rbac::{Permission, Role, AccessPolicy, PolicyContext, evaluate_access_policies, set_user_credential, set_record_sensitivity, create_access_policy, CredentialType, SensitivityLevel, TimeRestriction};
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -976,17 +976,22 @@ impl VisionRecordsContract {
         Ok(())
     }
 
-    /// Check access level
+    /// Check access level with ABAC policy evaluation
     pub fn check_access(env: Env, patient: Address, grantee: Address) -> AccessLevel {
+        // First check traditional consent-based access
         if !has_active_consent(&env, &patient, &grantee) {
             return AccessLevel::None;
         }
 
-        let key = (symbol_short!("ACCESS"), patient, grantee);
+        let key = (symbol_short!("ACCESS"), patient.clone(), grantee.clone());
 
         if let Some(grant) = env.storage().persistent().get::<_, AccessGrant>(&key) {
             if grant.expires_at > env.ledger().timestamp() {
-                return grant.level;
+                // Check if ABAC policies also allow this access
+                let abac_allowed = evaluate_access_policies(&env, &grantee, None, Some(patient.clone()));
+                if abac_allowed {
+                    return grant.level;
+                }
             }
         }
 

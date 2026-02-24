@@ -977,3 +977,77 @@ pub fn publish_rate_limit_bypass_updated(
     };
     env.events().publish(topics, data);
 }
+
+/// Event published when an access policy is created.
+#[soroban_sdk::contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PolicyCreatedEvent {
+    pub policy_id: String,
+    pub created_by: Address,
+    pub timestamp: u64,
+}
+
+/// Event published when a user credential is set.
+#[soroban_sdk::contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CredentialSetEvent {
+    pub user: Address,
+    pub credential: crate::CredentialType,
+    pub set_by: Address,
+    pub timestamp: u64,
+}
+
+/// Event published when a record sensitivity level is set.
+#[soroban_sdk::contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SensitivitySetEvent {
+    pub record_id: u64,
+    pub sensitivity: crate::SensitivityLevel,
+    pub set_by: Address,
+    pub timestamp: u64,
+}
+
+/// Publishes an event when an access policy is created.
+pub fn publish_policy_created(env: &Env, policy_id: String, created_by: Address) {
+    let topics = (symbol_short!("POL_CRT"),);
+    let data = PolicyCreatedEvent {
+        policy_id,
+        created_by,
+        timestamp: env.ledger().timestamp(),
+    };
+    env.events().publish(topics, data);
+}
+
+/// Publishes an event when a user credential is set.
+pub fn publish_credential_set(
+    env: &Env,
+    user: Address,
+    credential: crate::CredentialType,
+    set_by: Address,
+) {
+    let topics = (symbol_short!("CRED_SET"), user.clone());
+    let data = CredentialSetEvent {
+        user,
+        credential,
+        set_by,
+        timestamp: env.ledger().timestamp(),
+    };
+    env.events().publish(topics, data);
+}
+
+/// Publishes an event when a record sensitivity level is set.
+pub fn publish_sensitivity_set(
+    env: &Env,
+    record_id: u64,
+    sensitivity: crate::SensitivityLevel,
+    set_by: Address,
+) {
+    let topics = (symbol_short!("SENS_SET"), record_id);
+    let data = SensitivitySetEvent {
+        record_id,
+        sensitivity,
+        set_by,
+        timestamp: env.ledger().timestamp(),
+    };
+    env.events().publish(topics, data);
+}
