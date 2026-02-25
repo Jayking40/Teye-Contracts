@@ -86,8 +86,7 @@ fn setup() -> (Env, Address, ZkVotingClient<'static>, BytesN<32>) {
     let env = Env::default();
     env.mock_all_auths();
 
-    #[allow(deprecated)]
-    let contract_id = env.register_contract(None, ZkVoting);
+    let contract_id = env.register(ZkVoting, ());
     let client = ZkVotingClient::new(&env, &contract_id);
     let admin = Address::generate(&env);
 

@@ -129,7 +129,7 @@ fn test_contract_admin_can_set_rate_limit() {
     let (env, client, admin) = setup();
     let contract_admin = Address::generate(&env);
 
-    client.promote_admin(&admin, &contract_admin, &AdminTier::Contract);
+    client.promote_admin(&admin, &contract_admin, &AdminTier::ContractAdmin);
     client.set_rate_limit_config(&contract_admin, &100, &3600, &0);
 
     let config = client.get_rate_limit_config();
@@ -276,7 +276,7 @@ fn test_demoted_contract_admin_cannot_set_rate_limit() {
     let (env, client, admin) = setup();
     let contract_admin = Address::generate(&env);
 
-    client.promote_admin(&admin, &contract_admin, &AdminTier::Contract);
+    client.promote_admin(&admin, &contract_admin, &AdminTier::ContractAdmin);
     client.set_rate_limit_config(&contract_admin, &100, &3600, &0);
 
     // Demote

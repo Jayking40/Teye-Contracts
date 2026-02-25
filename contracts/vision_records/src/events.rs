@@ -99,6 +99,17 @@ pub struct AccessRevokedEvent {
     pub timestamp: u64,
 }
 
+/// Event published when revoking a grantee's access cascades to delegations they issued.
+#[soroban_sdk::contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CascadingRevocationEvent {
+    pub patient: Address,
+    pub revoked_grantee: Address,
+    pub delegatee: Address,
+    pub is_scoped: bool,
+    pub timestamp: u64,
+}
+
 /// Event published when an expired access grant is purged.
 #[soroban_sdk::contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -283,6 +294,29 @@ pub fn publish_access_revoked(env: &Env, patient: Address, grantee: Address) {
     let data = AccessRevokedEvent {
         patient,
         grantee,
+        timestamp: env.ledger().timestamp(),
+    };
+    env.events().publish(topics, data);
+}
+
+pub fn publish_cascading_revocation(
+    env: &Env,
+    patient: Address,
+    revoked_grantee: Address,
+    delegatee: Address,
+    is_scoped: bool,
+) {
+    let topics = (
+        symbol_short!("CASC_REV"),
+        patient.clone(),
+        revoked_grantee.clone(),
+        delegatee.clone(),
+    );
+    let data = CascadingRevocationEvent {
+        patient,
+        revoked_grantee,
+        delegatee,
+        is_scoped,
         timestamp: env.ledger().timestamp(),
     };
     env.events().publish(topics, data);
@@ -1138,137 +1172,94 @@ pub fn publish_sensitivity_set(
     env.events().publish(topics, data);
 }
 
-// ── Optimistic Concurrency Control Events ───────────────────────────────────
+// ── Structured event streaming helpers ───────────────────────────────────────
+//
+// These functions emit events in a format compatible with the `events` contract
+// streaming system. Each publishes under a hierarchical topic so that external
+// subscribers can filter using wildcard patterns (e.g. `records.vision.*`).
 
-/// Event published when a record update is applied under OCC.
-#[soroban_sdk::contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct OccUpdateAppliedEvent {
-    pub record_id: u64,
-    pub new_version: u64,
-    pub provider: Address,
-    pub timestamp: u64,
-}
-
-/// Event published when concurrent modifications are auto-merged.
-#[soroban_sdk::contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct OccMergeAppliedEvent {
-    pub record_id: u64,
-    pub new_version: u64,
-    pub provider: Address,
-    pub merged_field_count: u32,
-    pub timestamp: u64,
-}
-
-/// Event published when a concurrency conflict is detected and queued.
-#[soroban_sdk::contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct OccConflictDetectedEvent {
-    pub conflict_id: u64,
-    pub record_id: u64,
-    pub provider: Address,
-    pub conflicting_fields: Vec<String>,
-    pub strategy: ResolutionStrategy,
-    pub timestamp: u64,
-}
-
-/// Event published when a conflict is resolved.
-#[soroban_sdk::contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct OccConflictResolvedEvent {
-    pub conflict_id: u64,
-    pub record_id: u64,
-    pub resolved_by: Address,
-    pub timestamp: u64,
-}
-
-/// Event published when a record's resolution strategy is changed.
-#[soroban_sdk::contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct OccStrategyChangedEvent {
-    pub record_id: u64,
-    pub strategy: ResolutionStrategy,
-    pub changed_by: Address,
-    pub timestamp: u64,
-}
-
-pub fn publish_occ_update_applied(env: &Env, record_id: u64, new_version: u64, provider: Address) {
-    let topics = (symbol_short!("OCC_APPL"), record_id, provider.clone());
-    let data = OccUpdateAppliedEvent {
-        record_id,
-        new_version,
-        provider,
-        timestamp: env.ledger().timestamp(),
-    };
-    env.events().publish(topics, data);
-}
-
-pub fn publish_occ_merge_applied(
+/// Emit a structured streaming event when a vision record is created.
+pub fn emit_record_created(
     env: &Env,
     record_id: u64,
-    new_version: u64,
+    patient: Address,
     provider: Address,
-    merged_field_count: u32,
+    record_type: RecordType,
 ) {
-    let topics = (symbol_short!("OCC_MRG"), record_id, provider.clone());
-    let data = OccMergeAppliedEvent {
+    let topics = (symbol_short!("STREAM"), symbol_short!("REC_CRT"));
+    let data = RecordAddedEvent {
         record_id,
-        new_version,
+        patient,
         provider,
-        merged_field_count,
+        record_type,
         timestamp: env.ledger().timestamp(),
     };
     env.events().publish(topics, data);
 }
 
-pub fn publish_occ_conflict_detected(
-    env: &Env,
-    conflict_id: u64,
-    record_id: u64,
-    provider: Address,
-    conflicting_fields: Vec<String>,
-    strategy: ResolutionStrategy,
-) {
-    let topics = (symbol_short!("OCC_CNFL"), record_id, provider.clone());
-    let data = OccConflictDetectedEvent {
-        conflict_id,
+/// Emit a structured streaming event when a prescription is added.
+pub fn emit_prescription_created(env: &Env, record_id: u64, patient: Address, provider: Address) {
+    let topics = (symbol_short!("STREAM"), symbol_short!("RX_CRT"));
+    let data = RecordAddedEvent {
         record_id,
+        patient,
         provider,
-        conflicting_fields,
-        strategy,
+        record_type: RecordType::Prescription,
         timestamp: env.ledger().timestamp(),
     };
     env.events().publish(topics, data);
 }
 
-pub fn publish_occ_conflict_resolved(
+/// Emit a structured streaming event when access control changes.
+pub fn emit_access_changed(
     env: &Env,
-    conflict_id: u64,
-    record_id: u64,
-    resolved_by: Address,
+    patient: Address,
+    grantee: Address,
+    level: AccessLevel,
+    granted: bool,
 ) {
-    let topics = (symbol_short!("OCC_RSLV"), conflict_id, resolved_by.clone());
-    let data = OccConflictResolvedEvent {
-        conflict_id,
-        record_id,
-        resolved_by,
-        timestamp: env.ledger().timestamp(),
-    };
-    env.events().publish(topics, data);
+    if granted {
+        let topics = (symbol_short!("STREAM"), symbol_short!("ACC_CHG"));
+        let data = AccessGrantedEvent {
+            patient,
+            grantee,
+            level,
+            duration_seconds: 0,
+            expires_at: 0,
+            timestamp: env.ledger().timestamp(),
+        };
+        env.events().publish(topics, data);
+    } else {
+        let topics = (symbol_short!("STREAM"), symbol_short!("ACC_CHG"));
+        let data = AccessRevokedEvent {
+            patient,
+            grantee,
+            timestamp: env.ledger().timestamp(),
+        };
+        env.events().publish(topics, data);
+    }
 }
 
-pub fn publish_occ_strategy_changed(
+/// Emit a structured streaming event for emergency access actions.
+pub fn emit_emergency_event(
     env: &Env,
-    record_id: u64,
-    strategy: ResolutionStrategy,
-    changed_by: Address,
+    access_id: u64,
+    patient: Address,
+    requester: Address,
+    granted: bool,
 ) {
-    let topics = (symbol_short!("OCC_STRT"), record_id, changed_by.clone());
-    let data = OccStrategyChangedEvent {
-        record_id,
-        strategy,
-        changed_by,
+    let action = if granted {
+        symbol_short!("EM_GRANT")
+    } else {
+        symbol_short!("EM_REVOK")
+    };
+    let topics = (symbol_short!("STREAM"), action);
+    let data = EmergencyAccessGrantedEvent {
+        access_id,
+        patient,
+        requester,
+        condition: EmergencyCondition::LifeThreatening,
+        expires_at: 0,
         timestamp: env.ledger().timestamp(),
     };
     env.events().publish(topics, data);
